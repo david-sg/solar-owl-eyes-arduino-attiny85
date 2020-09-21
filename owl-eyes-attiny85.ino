@@ -50,35 +50,34 @@ void resetWatchdog ()
 // 10 second test
 //long cycles = 15;
 // 4.5 hours (6intervals*60mins*4.5hrs)
-long cycles = 1620;
+long cycles = 300;
 
-// uno pin 11
 // pin 3 is the red led warning light
-int red = 3;
+int red = 4;
 // pin 1 is left eye
 int left = 1;
 //pin 0 is right eye
 int right = 0;
 
-int t = 1000;
+int t = 500;
 
-int light_power = 100;
+int light_power = 75;
 
-int low_power=1;
 
 void setup()
 {
   resetWatchdog ();  // do this first in case WDT fires
-  pinMode(5, INPUT);
-  randomSeed(analogRead(5)); // randomize using noise from analog pin 5
+
 
   for (int i = 0; i < 5; i++) {
     pinMode(i, OUTPUT);
   }
 
   //add input on solar voltage
-  pinMode(4, INPUT);
-
+  pinMode(3, INPUT);
+//  check pin 2 for random seed
+  pinMode(2, INPUT);
+  randomSeed(analogRead(2)); // randomize using noise from analog pin 2
 
 }
 
@@ -137,7 +136,7 @@ void blink () {
 }
 
 void combo () {
-  switch (random(4)) {
+  switch (random(5)) {
     case 0:
       left_eye();
       right_eye();
@@ -156,8 +155,19 @@ void combo () {
       blink();
       break;
 
+    case 4:
+      blink();
+      delay(t);
+      blink();  
+      delay(t);   
+      blink();
+      delay(t);
+      blink();
+      break;
+
     default:
       blink();
+      delay(t);
       blink();
 
       break;
@@ -167,18 +177,20 @@ void combo () {
 
 void loop()
 {
+  // reset the low power state
+  int low_power = 0;
 
   //check the solar panel voltage
-  int sensorValue = analogRead(A2);
+  int sensorValue = analogRead(A3);
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
   float solarVoltage = sensorValue * (5.0 / 1023.0);
   long voltage = readVcc();
-
+//  solarVoltage = 0;
   //check if its been 4.5 hours, low voltage or if its daytime
-  if ( cycles < 10 || voltage < 3200 || solarVoltage >= 0.50) {
+  if ( cycles < 10 || voltage < 3200 || solarVoltage >= 0.30) {
     //      reset the cycles if its daytime
-    if ( solarVoltage >= 0.50) {
-      cycles = 1620;
+    if ( solarVoltage >= 0.30) {
+      cycles = 600;
     }
     //  daytime so turn off the lights and go to sleep
     digitalWrite(left, LOW);
@@ -187,7 +199,7 @@ void loop()
     goToSleep ();
   } else {
     if (voltage < 3400) {
-      low_power=1;
+      low_power = 1;
       digitalWrite(red, HIGH);
       digitalWrite(left, LOW);
       digitalWrite(right, LOW);
@@ -195,28 +207,28 @@ void loop()
       digitalWrite(red, LOW);
     }
 
-if (low_power == 0){ 
-    switch (random(3)) {
-      case 0:
-        left_eye();
-        break;
+    if (low_power != 1) {
+      switch (random(3)) {
+        case 0:
+          left_eye();
+          break;
 
-      case 1:
-        right_eye();
-        break;
+        case 1:
+          right_eye();
+          break;
 
-      case 2:
-        blink();
-        break;
+        case 2:
+          blink();
+          break;
 
-      default:
-        combo();
+        default:
+          combo();
 
+      }
+      delay(random(3000, 10000));
+
+      cycles --;
     }
-    delay(random(3000, 10000));
-
-    cycles --;
-}
 
   }
 
